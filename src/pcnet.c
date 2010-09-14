@@ -1,9 +1,5 @@
 /* pcnet.c: PCNet-PCI II/III Ethernet controller driver */
 
-#ifndef MODULE
-#define MODULE
-#endif
-
 #include <linux/module.h>
 #include <linux/init.h>
 
