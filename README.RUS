@@ -1,0 +1,10 @@
+AMD PCNet-PCI II/III driver for Linux
+
+pcnet-driver - драйвер для ethernet-контроллеров PCNet-PCI II и PCNet-FAST III.
+Реализован в виде модуля для ядра Linux версий > 2.6.${x}. Целью проекта никак
+не является замещение существующего драйвера в ядре Linux, а лишь описание
+процесса разработки драйвера сетевых устройств.
+
+Проект развивается в рамках сообщества http://ru.kernelnewbies.org/.
+Обсуждение проекта происходит через рассылку
+ http://lists.kernelnewbies.org/mailman/listinfo/kernel-russian
