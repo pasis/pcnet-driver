@@ -1,16 +1,23 @@
 /* pcnet.c: PCNet-PCI II/III Ethernet controller driver */
+/*
+ * Authors:
+ *		Dmitry Podgorny <pasis.ua@gmail.com>
+ *		Denis Kirjanov <kirjanov@gmail.com>
+ */
 
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/pci.h>
 
-MODULE_AUTHOR("Dmitry Podgorny <pasis.ua@gmail.com>");
-MODULE_DESCRIPTION("PCNet-PCI II/III Ethernet controller driver");
-MODULE_VERSION("dev");
-MODULE_LICENSE("GPL");
-
 #define DRV_NAME	"pcnet_dummy"
+#define DRV_VERSION	"dev"
+#define DRV_DESCRIPTION	"PCNet-PCI II/III Ethernet controller driver"
+
+MODULE_AUTHOR("Dmitry Podgorny <pasis.ua@gmail.com>");
+MODULE_DESCRIPTION(DRV_DESCRIPTION);
+MODULE_VERSION(DRV_VERSION);
+MODULE_LICENSE("GPL");
 
 static DEFINE_PCI_DEVICE_TABLE(pcnet_dummy_pci_tbl) = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_LANCE) },
@@ -42,14 +49,14 @@ static struct pci_driver pcnet_dummy_driver = {
 
 static int __init pcnet_init(void)
 {
-	printk(KERN_INFO "pcnet: module has loaded");
+	printk(KERN_INFO DRV_NAME ": " DRV_DESCRIPTION);
 
 	return pci_register_driver(&pcnet_dummy_driver);
 }
 
 static void __exit pcnet_exit(void)
 {
-	printk(KERN_INFO "pcnet: module was unloaded");
+	printk(KERN_INFO DRV_NAME ": unloading...");
 	pci_unregister_driver(&pcnet_dummy_driver);
 }
 
