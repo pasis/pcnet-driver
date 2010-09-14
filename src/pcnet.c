@@ -12,7 +12,7 @@ static int __init pcnet_init(void)
 {
 	printk(KERN_INFO "pcnet: module has loaded");
 
-	return 1;
+	return 0;
 }
 
 static void __exit pcnet_exit(void)
