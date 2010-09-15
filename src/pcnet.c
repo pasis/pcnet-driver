@@ -24,17 +24,51 @@ static DEFINE_PCI_DEVICE_TABLE(pcnet_dummy_pci_tbl) = {
 	{ }
 };
 
+static int pcnet_dummy_init_netdev(struct pci_dev *pdev, unsigned int ioaddr);
+
 static int __devinit pcnet_dummy_init_one(struct pci_dev *pdev,
 		const struct pci_device_id *ent)
 {
-	/* basically pci-skeleton stuff */
-	/* reset the chip at the end */
+	unsigned int ioaddr;
+	int err;
+
+	if (pci_enable_device(pdev))
+		return -ENODEV;
+	/* enables bus-mastering for device pdev */
+	pci_set_master(pdev);
+
+	if (pci_request_regions(pdev, DRV_NAME))
+	{
+		pci_disable_device(pdev);
+		return -EBUSY;
+	}
+
+	ioaddr = pci_resource_start(pdev, 0);
+
+	err = pcnet_dummy_init_netdev(pdev, ioaddr);
+	if (err)
+	{
+		pci_disable_device(pdev);
+		pci_release_regions(pdev);
+	}
+
+	return err;
+}
+
+static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev, unsigned int ioaddr)
+{
+	/* registers net_device and returns err */
+	/* TODO: reset the chip at the end */
+
 	return 0;
 }
 
 static void __devexit pcnet_dummy_remove_one(struct pci_dev *pdev)
 {
-	/* noop */
+	/* TODO: ensure pdev is enabled */
+
+	pci_disable_device(pdev);
+	pci_release_regions(pdev);
 }
 
 static struct pci_driver pcnet_dummy_driver = {
