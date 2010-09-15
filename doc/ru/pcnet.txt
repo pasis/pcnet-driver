@@ -1,0 +1,181 @@
+x.y VENDOR ID
+
+ Vendor ID у AMD равен 0x1022, а Device ID сетевой карты - 0x2000. Эти значения
+объявлены в <linux/pci_ids.h> как PCI_VENDOR_ID_AMD и PCI_DEVICE_ID_AMD_LANCE
+соответственно.
+ Для заполнения структуры pci_device_id можно воспользоваться макросом
+PCI_DEVICE, который объявлен в <linux/pci.h>. Этот макрос подставляет значение
+vendor и device в структуру, а значения subvendor и subdevice устанавливает в
+PCI_ANY_ID. Использование в нашем случае:
+	struct pci_device_id pcnet_pci_tbl[] = {
+		{ PCI_DEVICE( PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_LANCE ), },
+		{ }
+	}
+
+x.y РЕГИСТРАЦИЯ PCI ДРАЙВЕРА
+
+ Необходимо заполнить структуру pci_driver. Нас интересуют четыре поля этой
+структуры:
+	struct pci_driver pcnet_pci_driver = {
+		.name		= DRV_NAME,
+		.id_table	= pcnet_pci_tbl,
+		.probe		= pcnet_probe,
+		.remove		= pcnet_remove
+	};
+ name является указателем на строку. Прототипы функций probe() и remove() можно
+посмотреть в описании структуры pci_driver в <linux/pci.h>
+ Регистрацию PCI драйвера лучше всего выполнять внутри функции инициализации
+модуля:
+	pci_register_driver(&pcnet_pci_driver);
+ После этого ядро передаст управление функции pcnet_probe(), с указателем на
+PCI устройство, для которого совпали значения Vendor ID и Device ID
+(теоретически =))
+
+ Функции инициализации и очистки необходимо "пометить атрибутами", макросы
+определены в <linux/init.h> [2]. Для функций инициализации и очистки модуля
+необходимо использовать __init и __exit соответственно, а для инициализации и
+очистки устройства - __devinit и __devexit. Функции, вызываемые из probe()
+также можно пометить __devinit. Как говорится в [2], лучше не помечать
+функции, чем пометить неправильно.
+ Таблица pcnet_pci_tbl должна быть отмечена как __devinitconst [2], но это
+делается автоматически, если таблица объявлена через DEFINE_PCI_DEVICE_TABLE()
+
+x.y PCI BUS MASTERING
+
+Bus mastering [6]
+ Bus mastering (Управление шиной) это функция шины PCI которая может
+ использоваться любым PCI устройством (например контроллером диска,
+ графическим контроллером или звуковой картой). Bus mastering позволяет
+ устройству управлять шиной и осуществлять (инициировать) любые транзакции
+ чтения / записи к другим устройствам на шине PCI или к системной памяти. Эти
+ транзакции осуществляются независимо от главного процессора, поэтому они
+ отнимают время только у шины, но не у процессора. Bus mastering транзакции
+ нисколько не быстрее обычных транзакций, осуществляемых процессором.
+ Преимущество bus mastering в том, что контроллер запрограммированный на
+ выполнение какой-либо передачи данных или на выполнение последовательности
+ команд больше не требует действий от процессора пока он (контроллер) не
+ завершит свою задачу. Обычно для информирования процессора о том, что хозяин
+ шины (bus master) выполнил свои действия используется механизм прерываний.
+
+ Для включения функции bus mastering для pci устройства, используется функция
+pci_set_master().
+
+x.y БАЗОВЫЙ АДРЕС I/O
+
+ В <linux/pci.h> объявлены макросы, которые выбирают из структуры pci_dev
+начальный адрес I/O, конечный, размер этого адресного пространства и флаги.
+Эти макросы лишь облегчают написание и понимание кода. На самом деле они
+заменяются на обращение к полю resource. Получение начального адреса выглядит:
+	ioaddr = pci_resource_start(pdev, 0);
+
+x.y СБРОС КОНТРОЛЛЕРА
+
+S_RESET [1]
+ Software Reset (S_RESET) is a PCnet-PCI II controller reset operation that has
+ been created by a read access to the Reset register which is located at offset
+ 14h in Word I/O mode or offset 18h in DWord I/O mode from the PCnet-PCI II
+ controller I/O or memory mapped I/O base address.
+
+ Таким образом для сброса контроллера необходимо прочитать регистр Reset,
+который находится по смещению 14h относительно базового адреса I/O. Это будет
+выглядить следующим образом:
+	inw( BASE_IO_ADDR + 0x14 );
+ Для адреса регистра определим значение PCNET_PIO_RESET равное 0x14.
+ Аналогично, для 32-битной адресации:
+	inl( BASE_IO_ADDR + 0x18 );
+
+ Значение по умолчанию регистра CSR0 равно 0x0004 [5], т.е. установленный бит
+STOP.
+
+x.y ЧТЕНИЕ И ЗАПИСЬ РЕГИСТРОВ CSR
+
+I/O Register Accesses [5]
+ To access a Control Status Register, you must com-
+ plete a two step operation. First, you perform an I/O
+ write to the RAP using the appropriate CSR number as
+ your data. Then, you perform an I/O read or write ac-
+ cess to the RDP. Note that the contents of the RAP is
+ latched and is not changed until rewritten; therefore,
+ the register select cycle is not required in order to re-
+ peatedly access the same CSR.
+
+ Register      16bit I/O      32bit I/O
+  RDP             0x10           0x10
+  RAP             0x12           0x14
+  RESET           0x14           0x18
+
+ Следовательно, нужно записать в регистр RAP номер регистра CSR, а затем
+читать/писать значение из/в регистр RDP. Смещения регистров для каждого режима
+адресации расписаны в таблице выше.
+
+x.y ОПРЕДЕЛЕНИЕ РАЗРЯДНОСТИ I/O АДРЕСАЦИИ
+
+ Используя значение по умолчанию регистра CSR0, можно определить какая
+адресация корректно работает. После сброса контроллера пытаемся прочитать CSR0
+и сверить его значение. Сначала пробуем 16-битную адресацию, используя для
+этого соответствующие смещение внутри I/O пространства. В случае ошибки
+пробуем 32-битную адресацию. Если же и здесь ошибка - возвращаем ошибку
+обнаружения устройства.
+
+x.y ОБЛАСТЬ ПОРТОВ ВВОДА-ВЫВОДА
+
+ Адрес PROM, регистры конфигурации шины и регистры контроллера занимают 32
+байта адресного пространства [1]. Доступ как PIO, так и MMIO поддерживается.
+Вследствие этого нужно зарезервировать 32 байта области портов ввода-вывода
+начиная с базового адреса. Для размера области определим значение
+PCNET_IO_RANGE_SIZE равное 32.
+	request_region( BASE_IO_ADDR, PCNET_IO_RANGE_SIZE, DRV_NAME );
+ Также можно воспользоваться функцией pci_request_regions(), которая берет
+базовый адрес и размер области из структуры pci_dev. В таком случае все
+намного проще:
+	pci_request_regions(pdev, DRV_NAME);
+ Для освобождения зарезервированной области нужно воспользоваться функциями
+release_region() или pci_release_regions() соответственно.
+
+x.y HARDWARE (MAC) ADDRESS
+
+ Физический адрес находится в первых шести байтах EEPROM [1]. Для доступа к
+ним можно воспользоваться портами ввода-вывода по смещению 0-5 относительно
+базового адреса.
+	I/O offsers 0h-Fh    Address PROM locations [1]
+
+x.y ЗАПОЛНЕНИЕ ПОЛЕЙ СТРУКТУРЫ net_device
+
+ Структура net_device описана в <linux/netdevice.h>
+ Как минимум интерфейсы структуры net_device ядер 2.6.27 и 2.6.31 отличаются.
+В новых версиях из структуры удалили указатели на функции, реализующие
+функциональность драйвера. Вместо этого добавлено новое поле netdev_ops,
+имеющее тип структуры net_device_ops. Все указатели на функции (немного
+переименованные) содержатся теперь там. Для удобства определения, какой вариант
+необходимо использовать, в новых ядрах определено значение HAVE_NET_DEVICE_OPS
+ Если использовать alloc_etherdev() для инициализации структуры net_device, то
+она уже будет содержать значения специфические для Ethernet.
+ Необходимо заполнить поля netdev_ops, base_addr, irq, dev_addr.
+
+x.y ПРЕРЫВАНИЕ
+
+ The controller hardware interrupt remains asserted until one of the following
+conditions is met [5]:
+ * A one is written to each bit in CSR0 and CSR4 that indicates an interrupt
+   condition
+ * The controller RESET pin is asserted
+ * The STOP bit is set (CSR0, bit 2)
+
+x.y POLLING
+
+ Контроллер можно опрашивать по таймеру, отключив при этом прерывания в
+регистре CSR0. В таком случае при опросе нужно смотреть на установленный флаг
+прерывания (7-й бит регистра CSR0) [5].
+ Такой подход позволит уменьшить накладные расходы при большом количестве
+потенциальных прерываний.
+
+x.y ЛИТЕРАТУРА
+
+[1]. Am79C970A PCnetTM-PCI II Single-Chip Full-Duplex Ethernet Controller for
+     PCI Local Bus Product
+[2]. linux/Documentation/PCI/pci.txt
+[3]. "Linux. Сетевая архитектура. Структура и реализация сетевых протоколов в
+     ядре" К.Вейрле, Ф.Пэльке, Х.Риттер, Д.Мюллер, М.Бехлер 2006
+[4]. linux/Documentation/DMA-mapping.txt
+[5]. PCnet Family Software Design Considerations
+[6]. "Руководство по PCI и AGP" http://www.3dnews.ru/video/pci-agp-guide/print
