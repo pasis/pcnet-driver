@@ -18,6 +18,7 @@
 #define DRV_DESCRIPTION	"PCNet-PCI II/III Ethernet controller driver"
 
 MODULE_AUTHOR("Dmitry Podgorny <pasis.ua@gmail.com>");
+MODULE_AUTHOR("Denis Kirjanov <kirjanov@gmail.com>");
 MODULE_DESCRIPTION(DRV_DESCRIPTION);
 MODULE_VERSION(DRV_VERSION);
 MODULE_LICENSE("GPL");
@@ -91,6 +92,27 @@ out:
 	return -ENODEV;
 }
 
+static int pcnet_dummy_open(struct net_device *ndev)
+{
+}
+
+static int pcnet_dummy_stop(struct net_device *ndev)
+{
+}
+
+static int pcnet_dummy_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+{
+}
+
+#ifdef HAVE_NET_DEVICE_OPS
+/* net_device_ops structure is new for 2.6.31 */
+static const struct net_device_ops pcnet_net_device_ops = {
+	.ndo_open = pcnet_dummy_open,
+	.ndo_stop = pcnet_dummy_stop,
+	.ndo_start_xmit = pcnet_dummy_start_xmit
+};
+#endif /* HAVE_NET_DEVICE_OPS */
+
 static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 		unsigned long ioaddr)
 {
@@ -107,6 +129,14 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 
 	/* init DMA rings */
 	/* init net_dev_ops */
+#ifdef HAVE_NET_DEVICE_OPS
+	ndev->netdev_ops = &pcnet_net_device_ops;
+#else
+	ndev->open = pcnet_dummy_open;
+	ndev->stop = pcnet_dummy_stop;
+	ndev->hard_start_xmit = pcnet_dummy_start_xmit;
+#endif /* HAVE_NET_DEVICE_OPS */
+
 	/* registers net_device and returns err */
 	/* TODO: reset the chip at the end */
 
