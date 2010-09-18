@@ -34,74 +34,26 @@ enum {
 
 struct pcnet_private {
 	/* TODO:
-	 * DMA buffer management operations 
+	 * DMA buffer management operations
 	 */
 	spinlock_t lock;
 	struct pci_dev *pci_dev;
 	void __iomem *base;
 };
 
-/* Why do we need to create protos like this? */
-static int pcnet_dummy_init_netdev(struct pci_dev *pdev, unsigned long ioaddr);
-
-static int __devinit pcnet_dummy_init_one(struct pci_dev *pdev,
-		const struct pci_device_id *ent)
-{
-	struct pcnet_private *pp;
-	struct net_device *ndev;
-	void __iomem *ioaddr;
-#ifdef USE_IO_OPS
-	int bar = 0;
-#else
-	int bar = 1;
-#endif
-
-	if (pci_enable_device(pdev))
-		return -ENODEV;
-	/* enables bus-mastering for device pdev */
-	pci_set_master(pdev);
-
-	ndev = alloc_etherdev(sizeof(*pp));
-	if (!ndev) {
-		goto out;
-	}
-	/* register ourself under /sys/class/net/ */
-	SET_NETDEV_DEV(ndev, &pdev->dev);
-
-	if (pci_request_regions(pdev, DRV_NAME))
-		goto out_netdev;
-
-	ioaddr = pci_iomap(pdev, bar, PCNET_IOSIZE_LEN);
-	if (!ioaddr)
-		goto out_res;
-	pci_set_drvdata(pdev, ndev);
-
-	if (pcnet_dummy_init_netdev(pdev, (unsigned long)ioaddr))
-		goto out_res_unmap;
-
-	return 0;
-
-out_res_unmap:
-	pci_iounmap(pdev, ioaddr);
-out_res:
-	pci_release_regions(pdev);
-out_netdev:
-	free_netdev(ndev);
-out:
-	pci_disable_device(pdev);
-	return -ENODEV;
-}
-
 static int pcnet_dummy_open(struct net_device *ndev)
 {
+	return 0;
 }
 
 static int pcnet_dummy_stop(struct net_device *ndev)
 {
+	return 0;
 }
 
 static int pcnet_dummy_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 {
+	return 0;
 }
 
 #ifdef HAVE_NET_DEVICE_OPS
@@ -143,6 +95,53 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	return 0;
 }
 
+static int __devinit pcnet_dummy_init_one(struct pci_dev *pdev,
+		const struct pci_device_id *ent)
+{
+	struct pcnet_private *pp;
+	struct net_device *ndev;
+	void __iomem *ioaddr;
+#ifdef USE_IO_OPS
+	int bar = 0;
+#else
+	int bar = 1;
+#endif
+
+	if (pci_enable_device(pdev))
+		return -ENODEV;
+	/* enables bus-mastering for device pdev */
+	pci_set_master(pdev);
+
+	ndev = alloc_etherdev(sizeof(*pp));
+	if (!ndev)
+		goto out;
+	/* register ourself under /sys/class/net/ */
+	SET_NETDEV_DEV(ndev, &pdev->dev);
+
+	if (pci_request_regions(pdev, DRV_NAME))
+		goto out_netdev;
+
+	ioaddr = pci_iomap(pdev, bar, PCNET_IOSIZE_LEN);
+	if (!ioaddr)
+		goto out_res;
+	pci_set_drvdata(pdev, ndev);
+
+	if (pcnet_dummy_init_netdev(pdev, (unsigned long)ioaddr))
+		goto out_res_unmap;
+
+	return 0;
+
+out_res_unmap:
+	pci_iounmap(pdev, ioaddr);
+out_res:
+	pci_release_regions(pdev);
+out_netdev:
+	free_netdev(ndev);
+out:
+	pci_disable_device(pdev);
+	return -ENODEV;
+}
+
 static void __devexit pcnet_dummy_remove_one(struct pci_dev *pdev)
 {
 	struct net_device *ndev = pci_get_drvdata(pdev);
@@ -151,7 +150,6 @@ static void __devexit pcnet_dummy_remove_one(struct pci_dev *pdev)
 	pp = netdev_priv(ndev);
 	pci_iounmap(pdev, pp->base);
 	free_netdev(ndev);
-	/* TODO: ensure pdev is enabled */
 	pci_disable_device(pdev);
 	pci_release_regions(pdev);
 	pci_set_drvdata(pdev, NULL);
