@@ -12,6 +12,7 @@
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/spinlock.h>
+#include <linux/types.h>
 
 #define DRV_NAME	"pcnet_dummy"
 #define DRV_VERSION	"dev"
@@ -31,6 +32,44 @@ static DEFINE_PCI_DEVICE_TABLE(pcnet_dummy_pci_tbl) = {
 enum {
 	PCNET_IOSIZE_LEN = 0x20,
 };
+
+/* PCnet-PCI II controller initialization includes the reading
+ * of the initialization block in memory to obtain the operat-
+ * ing parameters. 
+ * When SSIZE32 (BCR20, bit 8) is set to ONE, all
+ * initialization block entries are logically 32-bits wide.
+ *
+ * The PCnet-PCI II controller obtains the start address of
+ * the initialization block from the contents of CSR1 (least
+ * significant 16 bits of address) and CSR2 (most signifi-
+ * cant 16 bits of address). The host must write CSR1 and
+ * CSR2 before setting the INIT bit. The initialization block
+ * contains the user defined conditions for PCnet-PCI II
+ * controller operation, together with the base addresses
+ * and length information of the transmit and receive
+ * descriptor rings.
+ */
+
+/* Am79C970A reference, p. 69 */
+struct pcnet_dummy_init_block {
+	__le16 mode;
+	/* num of entries in TX/RX rings */
+	__le16 txlen_rxlen;
+	/* MAC address */
+	u8 mac_addr[6];
+	__le16 reserved;
+	/* The Logical Address Filter (LADRF) is a programmable
+	 * 64-bit mask that is used to accept incoming packets
+	 * based on Logical (Multicast) Addresses.
+	 */
+	__le32 laddr_filter_low;
+	__le32 laddr_filter_hi;
+	/* programmed with the physical address of the receive
+	 * and transmit descriptor rings
+	 */
+	__le32 rx_ring;
+	__le32 tx_ring;
+} __attribute__ ((__packed__));
 
 struct pcnet_private {
 	/* TODO:
@@ -81,6 +120,10 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 
 	/* init DMA rings */
 	/* init net_dev_ops */
+	/* FIXME:
+	 * isolate explicit HAVE_NET_DEVICE_OPS
+	 * with a macro
+	 */
 #ifdef HAVE_NET_DEVICE_OPS
 	ndev->netdev_ops = &pcnet_net_device_ops;
 #else
