@@ -71,6 +71,20 @@ struct pcnet_dummy_init_block {
 	__le32 tx_ring;
 } __attribute__ ((__packed__));
 
+/* 32bit TX/RX descriptors */
+/* PCnet Software Design Considerations, p.5 */
+struct xmit_descr {
+	__le32 addr;
+	/* The BCNT fields of the transmit and receive descriptors
+	 * are 12-bit negative numbers representing the twos com-
+	 * plement of the buffer size in bytes
+	 */
+	__le16 size;
+	__le16 status;
+	__le32 flags;
+	__le32 reserved;
+};
+
 struct pcnet_private {
 	/* TODO:
 	 * DMA buffer management operations
