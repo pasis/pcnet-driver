@@ -14,6 +14,8 @@
 #include <linux/spinlock.h>
 #include <linux/types.h>
 
+#include "pcnet.h"
+
 #define DRV_NAME	"pcnet_dummy"
 #define DRV_VERSION	"dev"
 #define DRV_DESCRIPTION	"PCNet-PCI II/III Ethernet controller driver"
