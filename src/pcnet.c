@@ -121,6 +121,9 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	struct pcnet_private *pp;
 	int irq;
 
+	if (!ndev)
+		return -ENODEV;
+
 	irq = pdev->irq;
 	pp = netdev_priv(ndev);
 	ndev->base_addr = ioaddr;
