@@ -198,6 +198,10 @@ static int __devinit pcnet_dummy_init_one(struct pci_dev *pdev,
 	int bar = 1;
 #endif
 
+#ifndef MODULE
+	pr_info_once("%s version %s\n", DRV_DESCRIPTION, DRV_VERSION);
+#endif
+
 	if (pci_enable_device(pdev))
 		return -ENODEV;
 	/* enables bus-mastering for device pdev */
@@ -258,7 +262,9 @@ static struct pci_driver pcnet_dummy_driver = {
 
 static int __init pcnet_init(void)
 {
-	printk(KERN_INFO DRV_NAME ": " DRV_DESCRIPTION);
+#ifdef MODULE
+	pr_info("%s version %s\n", DRV_DESCRIPTION, DRV_VERSION);
+#endif
 
 	return pci_register_driver(&pcnet_dummy_driver);
 }
