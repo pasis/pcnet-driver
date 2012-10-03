@@ -96,10 +96,10 @@ struct pcnet_private {
  * must be set to 0 on writing (except of CSR88)
  */
 
-#define read_csr(csr) pcnet_dummy_read_csr(ioaddr, csr)
-#define read_bcr(bcr) pcnet_dummy_read_bcr(ioaddr, bcr)
-#define write_csr(csr, val) pcnet_dummy_write_csr(ioaddr, csr, val)
-#define write_bcr(bcr, val) pcnet_dummy_write_bcr(ioaddr, bcr, val)
+#define read_csr(csr) pcnet_dummy_read_csr(pp->base, csr)
+#define read_bcr(bcr) pcnet_dummy_read_bcr(pp->base, bcr)
+#define write_csr(csr, val) pcnet_dummy_write_csr(pp->base, csr, val)
+#define write_bcr(bcr, val) pcnet_dummy_write_bcr(pp->base, bcr, val)
 
 static inline u32 pcnet_dummy_read_csr(void __iomem *ioaddr, u32 csr)
 {
@@ -170,7 +170,7 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 
 	/* read first 6 bytes of PROM */
 	for(i = 0; i < 6; i++)
-		ndev->dev_addr[i] = ioread8(ioaddr + i);
+		ndev->dev_addr[i] = ioread8((void *)ioaddr + i);
 	if (!is_valid_ether_addr(ndev->dev_addr))
 		random_ether_addr(ndev->dev_addr);
 
