@@ -127,6 +127,8 @@ static inline void pcnet_dummy_write_bcr(void __iomem *ioaddr, u32 bcr, u32 val)
 
 static int pcnet_dummy_open(struct net_device *ndev)
 {
+	/* init DMA rings */
+
 	return 0;
 }
 
@@ -171,7 +173,6 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	if (!is_valid_ether_addr(ndev->dev_addr))
 		random_ether_addr(ndev->dev_addr);
 
-	/* init DMA rings */
 	/* init net_dev_ops */
 	ndev->netdev_ops = &pcnet_net_device_ops;
 
