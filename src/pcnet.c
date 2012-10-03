@@ -243,6 +243,7 @@ static void __devexit pcnet_dummy_remove_one(struct pci_dev *pdev)
 	struct pcnet_private *pp;
 
 	pp = netdev_priv(ndev);
+	unregister_netdev(ndev);
 	pci_iounmap(pdev, pp->base);
 	free_netdev(ndev);
 	pci_disable_device(pdev);
