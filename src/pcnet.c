@@ -173,10 +173,6 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 
 	/* init DMA rings */
 	/* init net_dev_ops */
-	/* FIXME:
-	 * isolate explicit HAVE_NET_DEVICE_OPS
-	 * with a macro
-	 */
 	ndev->netdev_ops = &pcnet_net_device_ops;
 
 	/* registers net_device and returns err */
