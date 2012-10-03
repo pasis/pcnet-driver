@@ -165,6 +165,7 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	ndev->base_addr = ioaddr;
 	ndev->irq = irq;
 	pp->pci_dev = pdev;
+	pp->base = (void *)ioaddr;
 	spin_lock_init(&pp->lock);
 
 	/* read first 6 bytes of PROM */
