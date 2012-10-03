@@ -231,7 +231,6 @@ static int __init pcnet_init(void)
 
 static void __exit pcnet_exit(void)
 {
-	printk(KERN_INFO DRV_NAME ": unloading...");
 	pci_unregister_driver(&pcnet_dummy_driver);
 }
 
