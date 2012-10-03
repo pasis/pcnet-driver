@@ -153,6 +153,7 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	struct net_device *ndev = pci_get_drvdata(pdev);
 	struct pcnet_private *pp;
 	int irq;
+	unsigned long i;
 
 	if (!ndev)
 		return -ENODEV;
@@ -163,6 +164,12 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	ndev->irq = irq;
 	pp->pci_dev = pdev;
 	spin_lock_init(&pp->lock);
+
+	/* read first 6 bytes of PROM */
+	for(i = 0; i < 6; i++)
+		ndev->dev_addr[i] = ioread8(ioaddr + i);
+	if (!is_valid_ether_addr(ndev->dev_addr))
+		random_ether_addr(ndev->dev_addr);
 
 	/* init DMA rings */
 	/* init net_dev_ops */
