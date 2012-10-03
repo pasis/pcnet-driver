@@ -175,7 +175,10 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	/* init net_dev_ops */
 	ndev->netdev_ops = &pcnet_net_device_ops;
 
-	/* registers net_device and returns err */
+	if (register_netdev(ndev))
+		return -ENODEV;
+	netdev_info(ndev, "%s %pM\n", DRV_DESCRIPTION, ndev->dev_addr);
+
 	/* TODO: reset the chip at the end */
 
 	return 0;
