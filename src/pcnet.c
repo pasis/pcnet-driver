@@ -31,10 +31,6 @@ static DEFINE_PCI_DEVICE_TABLE(pcnet_dummy_pci_tbl) = {
 	{ }
 };
 
-enum {
-	PCNET_IOSIZE_LEN = 0x20,
-};
-
 /* PCnet-PCI II controller initialization includes the reading
  * of the initialization block in memory to obtain the operat-
  * ing parameters. 
@@ -96,6 +92,39 @@ struct pcnet_private {
 	void __iomem *base;
 };
 
+/* 16 most significant bits of all registers are undefined on reading and 
+ * must be set to 0 on writing (except of CSR88)
+ */
+
+#define read_csr(csr) pcnet_dummy_read_csr(ioaddr, csr)
+#define read_bcr(bcr) pcnet_dummy_read_bcr(ioaddr, bcr)
+#define write_csr(csr, val) pcnet_dummy_write_csr(ioaddr, csr, val)
+#define write_bcr(bcr, val) pcnet_dummy_write_bcr(ioaddr, bcr, val)
+
+static inline u32 pcnet_dummy_read_csr(void __iomem *ioaddr, u32 csr)
+{
+	iowrite32(csr, ioaddr + PCNET_RAP);
+	return ioread32(ioaddr + PCNET_RDP) & 0xffff;
+}
+
+static inline u32 pcnet_dummy_read_bcr(void __iomem *ioaddr, u32 bcr)
+{
+	iowrite32(bcr, ioaddr + PCNET_RAP);
+	return ioread32(ioaddr + PCNET_BDP) & 0xffff;
+}
+
+static inline void pcnet_dummy_write_csr(void __iomem *ioaddr, u32 csr, u32 val)
+{
+	iowrite32(csr, ioaddr + PCNET_RAP);
+	iowrite32(val & 0xffff, ioaddr + PCNET_RDP);
+}
+
+static inline void pcnet_dummy_write_bcr(void __iomem *ioaddr, u32 bcr, u32 val)
+{
+	iowrite32(bcr, ioaddr + PCNET_RAP);
+	iowrite32(val & 0xffff, ioaddr + PCNET_BDP);
+}
+
 static int pcnet_dummy_open(struct net_device *ndev)
 {
 	return 0;
@@ -124,6 +153,9 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	struct net_device *ndev = pci_get_drvdata(pdev);
 	struct pcnet_private *pp;
 	int irq;
+
+	if (!ndev)
+		return -ENODEV;
 
 	irq = pdev->irq;
 	pp = netdev_priv(ndev);

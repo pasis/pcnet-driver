@@ -85,4 +85,5 @@ pci_set_master().
                        сетевых протоколов в ядре"
 2. Documentation/PCI/pci.txt
 3. "Руководство по PCI и AGP" http://www.3dnews.ru/video/pci-agp-guide/print
+4. http://yarchive.net/comp/linux/io_space_accesses.html
 
