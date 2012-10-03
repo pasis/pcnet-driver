@@ -29,10 +29,6 @@ static DEFINE_PCI_DEVICE_TABLE(pcnet_dummy_pci_tbl) = {
 	{ }
 };
 
-enum {
-	PCNET_IOSIZE_LEN = 0x20,
-};
-
 /* PCnet-PCI II controller initialization includes the reading
  * of the initialization block in memory to obtain the operat-
  * ing parameters. 
