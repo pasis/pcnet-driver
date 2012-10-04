@@ -125,6 +125,21 @@ static inline void pcnet_dummy_write_bcr(void __iomem *ioaddr, u32 bcr, u32 val)
 	iowrite32(val & 0xffff, ioaddr + PCNET_BDP);
 }
 
+static int pcnet_dummy_reset(void __iomem *ioaddr)
+{
+	ioread16(ioaddr + PCNET_RESET16);
+	/* helper functions for WORD I/O mode ain't implemented */
+	iowrite16(CSR0, ioaddr + PCNET_RAP16);
+	if (ioread16(ioaddr + PCNET_RDP16) == CSR0_STOP)
+		return 0;
+	/* try to reset for DWORD I/O mode */
+	ioread32(ioaddr + PCNET_RESET);
+	if (pcnet_dummy_read_csr(ioaddr, CSR0) != CSR0_STOP)
+		return -EBUSY;
+
+	return 0;
+}
+
 static int pcnet_dummy_open(struct net_device *ndev)
 {
 	/* init DMA rings */
@@ -243,6 +258,7 @@ static void __devexit pcnet_dummy_remove_one(struct pci_dev *pdev)
 	struct pcnet_private *pp;
 
 	pp = netdev_priv(ndev);
+	pcnet_dummy_reset(pp->base);
 	unregister_netdev(ndev);
 	pci_iounmap(pdev, pp->base);
 	free_netdev(ndev);
