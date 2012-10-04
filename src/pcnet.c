@@ -140,6 +140,13 @@ static int pcnet_dummy_reset(void __iomem *ioaddr)
 	return 0;
 }
 
+static int pcnet_dummy_switch_dword_mode(void __iomem *ioaddr)
+{
+	/* a dword write to RDP sets controller into 32-bit I/O mode */
+	iowrite32(0, ioaddr + PCNET_RDP);
+	return !(pcnet_dummy_read_bcr(ioaddr, BCR18) & BCR18_DWIO);
+}
+
 static int pcnet_dummy_open(struct net_device *ndev)
 {
 	/* init DMA rings */

@@ -24,3 +24,8 @@ enum {
 	CSR0 = 0,
 	CSR0_STOP = 0x0004,
 };
+
+enum {
+	BCR18 = 18,
+	BCR18_DWIO = 0x0080,
+};
