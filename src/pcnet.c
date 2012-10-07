@@ -149,6 +149,19 @@ static int pcnet_dummy_switch_dword_mode(void __iomem *ioaddr)
 
 static int pcnet_dummy_open(struct net_device *ndev)
 {
+	struct pcnet_private *pp;
+
+	pp = netdev_priv(ndev);
+	if (pcnet_dummy_reset(pp->base)) {
+		netdev_err(ndev, "reset network controller failed\n");
+		return -EBUSY;
+	}
+	if (pcnet_dummy_switch_dword_mode(pp->base)) {
+		netdev_err(ndev, "switch to dword mode failed\n");
+		netdev_err(ndev, "driver operates only in dword mode\n");
+		return -EBUSY;
+	}
+
 	/* init DMA rings */
 
 	return 0;
@@ -196,14 +209,15 @@ static int __devinit pcnet_dummy_init_netdev(struct pci_dev *pdev,
 	if (!is_valid_ether_addr(ndev->dev_addr))
 		random_ether_addr(ndev->dev_addr);
 
+	if (pcnet_dummy_reset((void *)ioaddr))
+		return -ENODEV;
+
 	/* init net_dev_ops */
 	ndev->netdev_ops = &pcnet_net_device_ops;
 
 	if (register_netdev(ndev))
 		return -ENODEV;
 	netdev_info(ndev, "%s %pM\n", DRV_DESCRIPTION, ndev->dev_addr);
-
-	/* TODO: reset the chip at the end */
 
 	return 0;
 }
